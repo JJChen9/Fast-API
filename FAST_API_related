@@ -1,0 +1,83 @@
+#跟Tim在youtube上学的
+
+from fastapi import FastAPI, Path, Query, HTTPException, status
+from typing import Optional
+from pydantic import BaseModel
+
+app=FastAPI()
+
+@app.get('/')
+def index():
+    return {"hello JJ"}
+
+class Item(BaseModel):
+    name: str
+    price: float
+    brand: Optional[str]=None
+
+class UpdateItem(BaseModel):
+    name: Optional[str]  =None
+    price: Optional[float]=None
+    brand: Optional[str]=None
+
+
+
+
+"""
+inventory={
+    1: {
+        "name":"Milk",
+        "price":3.99,
+        "brand":"Regular"
+    }
+}
+"""
+inventory={}
+
+# path parameter
+@app.get("/get-item/{item_id}") 
+def get_item(item_id: int = Path(None, description='The ID of the item you want to view', gt=0, lt=100)):
+    return inventory[item_id]
+
+#Query parameter, come after the ? , with parameter =
+@app.get("/get-by-name") 
+
+#def get_item(*,item_id:int,name:Optional[str]=None, test: int ):
+def get_item(name: str=Query(None, title="Name", description="Name of item", max_length= 20)):
+    for item_id in inventory:
+        if inventory[item_id]['name']==name:
+            return inventory[item_id]
+        return {"Data" : "Not found"}
+    raise HTTPException(statis_code=404, detail="Item not found")
+
+#Request Body
+@app.post('/creat-item/{item_id}')    
+def create_item(item_id: int, item:Item):
+    if item_id in inventory:
+        return {"Error": "Item ID alreay exists" }
+    #inventory[item_id]={"name": item.name, "brand": item.brand, "price": item.price}
+    inventory[item_id]=item
+    
+    return inventory[item_id]
+@app.put('/update-tiem/{item_id}')
+def update_item(item_id: int, item:UpdateItem):
+    if item_id not in inventory:
+       return {"Error": "Item ID not exists" } 
+    if item.name !=None:
+        inventory[item_id].name=item.name 
+    if item.price !=None:
+        inventory[item_id].price=item.price
+    if item.brand!=None:
+        inventory[item_id].brand=item.brand
+    return inventory[item_id]
+
+@app.delete('/delete-item')
+def delete_item(item_id:int =Query(..., description="The ID you want to delete" )):
+    if item_of not in inventory:
+        return {"Error": "ID does not exist."}
+    del inventory[[item_id]]
+    return {"succee":"Item deleted!"}
+
+
+#关于asyncio函数: https://www.youtube.com/watch?v=t5Bo1Je9EmE 
+#更高级的fastAPI的课程： https://www.youtube.com/watch?v=7t2alSnE2-I 
